@@ -63,7 +63,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-white border-opacity-20 mt-12 pt-8 text-center">
-          <p className="text-black">&copy; Copyright Savaari.</p>
+          <p className="text-black">&copy; Copyright Rental.</p>
         </div>
       </div>
     </footer>

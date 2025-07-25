@@ -1,7 +1,17 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { FiMail, FiLock, FiLogIn, FiUser, FiTruck, FiShield } from "react-icons/fi";
+import { toast } from "react-toastify";
+
+
+
+import {
+  FiMail,
+  FiLock,
+  FiLogIn,
+  FiUser,
+  FiTruck,
+} from "react-icons/fi";
 
 const Login = () => {
   const [user, setUser] = useState({ email: "", password: "" });
@@ -13,13 +23,25 @@ const Login = () => {
   const roles = [
     { id: "user", name: "User", icon: <FiUser /> },
     { id: "driver", name: "Driver", icon: <FiTruck /> },
-    
   ];
 
+  // 🔁 Auto redirect if token already exists
   useEffect(() => {
-    // Animation trigger
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("userRole");
+    if (token && role) {
+      if (role === "driver") {
+        navigate("/Driver-Dashboard");
+      } else if (role === "user") {
+        navigate("/home");
+      }
+    }
+  }, [navigate]);
+
+  // 🌀 Animation for role change
+  useEffect(() => {
     setAnimate(true);
-    const timer = setTimeout(() => setAnimate(false), 1000);
+    const timer = setTimeout(() => setAnimate(false), 500);
     return () => clearTimeout(timer);
   }, [activeRole]);
 
@@ -30,16 +52,33 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+console.log("Sending login data:", { email: user.email, role: activeRole });
     try {
       const res = await axios.post("http://localhost:10000/api/auth/login", {
+       
         ...user,
-        role: activeRole
+        role: activeRole,
+        
       });
-      localStorage.setItem("token", res.data.token);
+console.log("Login payload:", { ...user, role: activeRole });
+
+      const { token } = res.data;
+      localStorage.setItem("token", token);
       localStorage.setItem("userRole", activeRole);
-      navigate(`/${activeRole}/dashboard`);
+      localStorage.setItem("email", user.email);
+      toast.success(`Logged in successfully as ${activeRole}`);
+
+      setTimeout(() => {
+        if (activeRole === "driver") {
+          navigate("/Driver-Dashboard");
+        } else if (activeRole === "user") {
+          navigate("/home");
+        } else {
+          toast.error("Unknown role");
+        }
+      }, 500);
     } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+      toast.error(err.response?.data?.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -80,97 +119,69 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-3">
-              <div>
-                <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiMail className="text-gray-400 text-sm" />
-                  </div>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="your@email.com"
-                    onChange={handleChange}
-                    className="w-full text-sm pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition"
-                    required
-                  />
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiMail className="text-gray-400 text-sm" />
                 </div>
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiLock className="text-gray-400 text-sm" />
-                  </div>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    placeholder="••••••••"
-                    onChange={handleChange}
-                    className="w-full text-sm pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition"
-                    required
-                  />
-                </div>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="you@example.com"
+                  onChange={handleChange}
+                  required
+                  className="w-full text-sm pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
+                />
               </div>
             </div>
 
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiLock className="text-gray-400 text-sm" />
+                </div>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  placeholder="••••••••"
+                  onChange={handleChange}
+                  required
+                  className="w-full text-sm pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-3 w-3 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-1.5 block text-gray-700">
-                  Remember me
-                </label>
+                <input id="remember-me" type="checkbox" className="h-3 w-3 text-orange-600 border-gray-300 rounded" />
+                <label htmlFor="remember-me" className="ml-1.5 text-gray-700">Remember me</label>
               </div>
-
-              <div>
-                <a href="#" className="text-orange-600 hover:text-orange-500 text-xs">
-                  Forgot password?
-                </a>
-              </div>
+              <a href="#" className="text-orange-600 hover:text-orange-500">Forgot password?</a>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-white text-sm font-medium focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-orange-500 transition ${
-                  isLoading ? "bg-orange-400" : "bg-orange-600 hover:bg-orange-700"
-                }`}
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Signing in...
-                  </>
-                ) : (
-                  `Sign in as ${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}`
-                )}
-              </button>
-            </div>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-white text-sm font-medium transition ${
+                isLoading ? "bg-orange-400" : "bg-orange-600 hover:bg-orange-700"
+              }`}
+            >
+              {isLoading ? "Signing in..." : `Sign in as ${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}`}
+            </button>
           </form>
 
           <div className="mt-5 text-center">
             <p className="text-xs text-gray-600">
-              Don't have an account?{" "}
-              <a href="/register" className="text-orange-600 hover:text-orange-500">
-                Sign up
-              </a>
+              Don’t have an account?{" "}
+              <a href="/register" className="text-orange-600 hover:text-orange-500">Sign up</a>
             </p>
           </div>
         </div>
